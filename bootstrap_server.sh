@@ -38,10 +38,30 @@ protected_file() {
   echo "Fehler: SAA_INSTALLER_SHA256 muss eine vollständige SHA-256-Prüfsumme sein." >&2
   exit 1
 }
-command -v curl >/dev/null || { echo "Fehler: curl fehlt." >&2; exit 1; }
-command -v sha256sum >/dev/null || { echo "Fehler: sha256sum fehlt." >&2; exit 1; }
-command -v openssl >/dev/null || fail "openssl fehlt."
 [[ "$SIGNATURE_URL" == https://* ]] || fail "SAA_INSTALLER_SIGNATURE_URL muss eine HTTPS-Adresse sein."
+# A downloaded bootstrap needs bash/root and a transport already. Install only
+# missing verification utilities, using the operator's configured package trust.
+if ! command -v openssl >/dev/null || ! command -v sha256sum >/dev/null || ! command -v curl >/dev/null; then
+  confirmed=false
+  non_interactive=false
+  for argument in "$@"; do
+    [[ "$argument" != --dry-run ]] || fail "Prüfwerkzeuge fehlen; Dry-Run installiert keine Pakete."
+    [[ "$argument" != --confirm-host-changes ]] || confirmed=true
+    [[ "$argument" != --non-interactive ]] || non_interactive=true
+  done
+  echo "Fehlende Prüfwerkzeuge installieren: ca-certificates, curl, openssl, coreutils."
+  if ! $confirmed; then
+    $non_interactive && fail "Paketinstallation benötigt --confirm-host-changes."
+    read -r -p "Installation aus den freigegebenen Paketquellen erlauben? [ja/NEIN]: " answer </dev/tty || fail "Interaktives Terminal fehlt."
+    [[ "$answer" == ja ]] || fail "Paketinstallation abgebrochen."
+  fi
+  . /etc/os-release
+  case "$ID:$VERSION_ID" in
+    ubuntu:24.04) apt-get update; apt-get install --no-remove --no-upgrade -y ca-certificates curl openssl coreutils ;;
+    rhel:9*|rhel:10*) dnf install -y ca-certificates curl openssl coreutils ;;
+    *) fail "Prüfwerkzeuge auf diesem Betriebssystem manuell installieren." ;;
+  esac
+fi
 protected_file "$PUBLIC_KEY" no
 if [[ -n "$AUTH_HEADER_FILE" ]]; then
   protected_file "$AUTH_HEADER_FILE" yes
