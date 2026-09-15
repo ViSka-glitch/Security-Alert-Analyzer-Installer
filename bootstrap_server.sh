@@ -2,11 +2,15 @@
 set -Eeuo pipefail
 set +x
 umask 077
+VERIFY_ONLY=false
+for argument in "$@"; do
+  [[ "$argument" != --verify-only ]] || VERIFY_ONLY=true
+done
 
-INSTALLER_URL="${SAA_INSTALLER_URL:-}"
-INSTALLER_SHA256="${SAA_INSTALLER_SHA256:-}"
-SIGNATURE_URL="${SAA_INSTALLER_SIGNATURE_URL:-}"
-PUBLIC_KEY="${SAA_INSTALLER_PUBLIC_KEY:-/etc/saa/installer-public.pem}"
+INSTALLER_URL="${SAA_INSTALLER_URL-https://api.github.com/repos/ViSka-glitch/Security-Alert-Analyzer/releases/assets/564934788}"
+INSTALLER_SHA256="${SAA_INSTALLER_SHA256-6d3b9525c9b3db27cc72a5bdde5270e6fd5609d1021bc837ec87277516839109}"
+SIGNATURE_URL="${SAA_INSTALLER_SIGNATURE_URL-https://api.github.com/repos/ViSka-glitch/Security-Alert-Analyzer/releases/assets/564934786}"
+PUBLIC_KEY="${SAA_INSTALLER_PUBLIC_KEY:-}"
 AUTH_HEADER_FILE="${SAA_INSTALLER_AUTH_HEADER_FILE:-}"
 
 fail() { echo "Fehler: $*" >&2; exit 1; }
@@ -42,6 +46,7 @@ protected_file() {
 # A downloaded bootstrap needs bash/root and a transport already. Install only
 # missing verification utilities, using the operator's configured package trust.
 if ! command -v openssl >/dev/null || ! command -v sha256sum >/dev/null || ! command -v curl >/dev/null; then
+  $VERIFY_ONLY && fail "Prüfwerkzeuge fehlen; --verify-only installiert keine Pakete."
   confirmed=false
   non_interactive=false
   for argument in "$@"; do
@@ -62,7 +67,47 @@ if ! command -v openssl >/dev/null || ! command -v sha256sum >/dev/null || ! com
     *) fail "Prüfwerkzeuge auf diesem Betriebssystem manuell installieren." ;;
   esac
 fi
+TEMPORARY_DIRECTORY="$(mktemp -d /run/saa-bootstrap.XXXXXXXX)"
+cleanup() {
+  rm -rf -- "$TEMPORARY_DIRECTORY"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+INSTALLER="$TEMPORARY_DIRECTORY/install_server.sh"
+
+if [[ -z "$PUBLIC_KEY" ]]; then
+  PUBLIC_KEY="$TEMPORARY_DIRECTORY/public.pem"
+  # Public verification key only. Trust derives from the reviewed bootstrap version.
+  printf '%s\n' '-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA04q0kAg03SE6v612cQLR
+Hyzlj0qbCOetaFsUUKX93QeThEcJe06UYKOSwH1gW7hOUhuh/d2lQvjQK5QVRAy1
+2GCKvdG1ex6mEGs6z1isi70smcos62BdVjp8NzYUA74Ja0iaLZa/q24wQWpJXS7h
+tF94loY0tpnTed5Nlny8iRQlX2W2aGNLip+bvsyVTY44A4+QeqcA4NO6JDjKFC2p
+ial+qXg1jx0OpJNkrGE9SVyII8Zg3LiJx/LfOp9gebcd7E6xoRSk6rAwags0TPRo
+naK8OJixSX0YgcAZVJHINlP/S14vAi9qzCQ5AFeNkRyt445Y4rm/sfYnpKinmtDo
+gRzQD6FMVBlabCcX8XuA73v1ReXrIXr1GXWx83XWL+NnxOsGk5JJ/02fsvzoGjR4
+fsmCJbd+50aZpHf/GfIOU0gPQ7KMqe8dGdltbWEBZQOBCWmjb3aJhvYgm0xU2uxd
+ZMEAt9BLgYRRxW+QTo4KZtdg77g6WlK4FiNVjGROF9R3jVoLQCAab+9tjTsEes4o
+FrXko5m2qz1WohE1+eWYJO4y6/H2hltn7wGqYSUqxX7KzroxNTkVZW2cV4/REFNe
+53BjdeNYzDC5Y73JPwY09AiFi/wcU3/Xivxmn7rWulYgqWBeaYiKwoSsNemPjEGZ
+QFXYOd01dc6g8d+LjvT5BPkCAwEAAQ==
+-----END PUBLIC KEY-----' > "$PUBLIC_KEY"
+fi
 protected_file "$PUBLIC_KEY" no
+if [[ -z "$AUTH_HEADER_FILE" && "$INSTALLER_URL" == https://api.github.com/* ]]; then
+  for argument in "$@"; do
+    [[ "$argument" != --non-interactive ]] || fail "Nichtinteraktiv ist eine geschützte Zugangsdatei erforderlich."
+  done
+  echo "Privater SAA-Testrelease: GitHub-Zugang wird nur für diesen Abruf verwendet."
+  echo "Dies ist eine verdeckte Tokenabfrage, keine GitHub-Browseranmeldung."
+  read -r -s -p "GitHub-Zugriffstoken (nicht in Befehle oder Chats kopieren): " access_token </dev/tty || fail "Kein Terminal verfügbar; geschützte Zugangsdatei verwenden."
+  echo
+  [[ "$access_token" =~ ^[A-Za-z0-9_]+$ ]] || fail "Ungültiges Tokenformat."
+  AUTH_HEADER_FILE="$TEMPORARY_DIRECTORY/auth-header"
+  printf 'Authorization: Bearer %s\n' "$access_token" > "$AUTH_HEADER_FILE"
+  unset access_token
+fi
 if [[ -n "$AUTH_HEADER_FILE" ]]; then
   protected_file "$AUTH_HEADER_FILE" yes
   # Never forward a private GitHub credential to a freely configurable host.
@@ -72,13 +117,6 @@ if [[ -n "$AUTH_HEADER_FILE" ]]; then
   [[ "$(wc -l < "$AUTH_HEADER_FILE")" == 1 ]] || fail "Zugangsdatei muss genau eine Headerzeile enthalten."
   LC_ALL=C grep -Eq '^Authorization: Bearer [A-Za-z0-9_]+$' "$AUTH_HEADER_FILE" || fail "Ungültiges Zugangsdateiformat."
 fi
-
-TEMPORARY_DIRECTORY="$(mktemp -d -t saa-bootstrap.XXXXXXXX)"
-cleanup() {
-  rm -rf -- "$TEMPORARY_DIRECTORY"
-}
-trap cleanup EXIT
-INSTALLER="$TEMPORARY_DIRECTORY/install_server.sh"
 
 download() {
   local headers=()
@@ -95,6 +133,10 @@ download "$INSTALLER_URL" "$INSTALLER" || fail "Installer konnte nicht geladen w
 download "$SIGNATURE_URL" "$TEMPORARY_DIRECTORY/installer.sig" || fail "Signatur konnte nicht geladen werden."
 printf '%s  %s\n' "$INSTALLER_SHA256" "$INSTALLER" | sha256sum --check --status || fail "Installer-Prüfsumme stimmt nicht überein."
 openssl dgst -sha256 -verify "$PUBLIC_KEY" -signature "$TEMPORARY_DIRECTORY/installer.sig" "$INSTALLER" >/dev/null 2>&1 || fail "Installer-Signatur ist ungültig."
+if $VERIFY_ONLY; then
+  echo "Download, SHA-256 und Signatur bestätigt. Installer nicht gestartet (--verify-only)."
+  exit 0
+fi
 chmod 0700 "$INSTALLER"
 
 echo "Installer geprüft. Die geführte Installation wird gestartet."
