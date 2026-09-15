@@ -31,10 +31,29 @@ Anschließend wird der lesende Zugriff geprüft. Private Schlüssel bleiben auf 
 
 ## Konfiguration
 
+### Geführter Testeinstieg ohne vorbereitete Dateien
+
+Der Bootstrapper enthält jetzt die beiden Asset-Adressen, den erwarteten Hash und den
+öffentlichen Prüfschlüssel für `installer-test-555d59a`. Ohne Zugangsdatei fragt er das
+GitHub-Token verdeckt über das Terminal ab. Das ist **keine OAuth-/Browseranmeldung**.
+Der Tokenwert landet nur kurzzeitig in einer root-geschützten Datei unter `/run` und
+wird beim Beenden entfernt; nicht als Argument oder Umgebungsvariable übergeben.
+Ein gültiger GitHub-Zugang muss vorhanden sein. Der Testrelease ist noch ein Entwurf;
+der Abruf mit einem ausschließlich lesenden Installationskonto ist nicht abgenommen.
+
+Vorher kein Betriebskonto und keine sudo-Regeln für `saa` anlegen. Nach erfolgreicher
+Prüfung übernimmt der private Installer die bestätigte Hostvorbereitung. Die einmalige
+GitHub-Freigabe des erzeugten Deploy-Keys bleibt notwendig. Für reine Prüfung
+`--verify-only` verwenden: kein Installerstart und keine Paketinstallation.
+
+Der mitgelieferte öffentliche Schlüssel vermeidet eine zusätzliche Dateiübertragung,
+ist aber **kein unabhängig bezogener Vertrauensanker**. Deshalb einen geprüften festen
+Bootstrap-Commit verwenden. Der private Signierschlüssel ist niemals enthalten.
+
 - `SAA_INSTALLER_URL`: vom Betreiber freigegebene HTTPS-Adresse des Installers.
 - `SAA_INSTALLER_SHA256`: vollständige, unabhängig geprüfte SHA-256-Prüfsumme.
 - `SAA_INSTALLER_SIGNATURE_URL`: HTTPS-Adresse der binären SHA-256-Signatur.
-- `SAA_INSTALLER_PUBLIC_KEY`: lokaler PEM-Prüfschlüssel, Standard `/etc/saa/installer-public.pem`.
+- `SAA_INSTALLER_PUBLIC_KEY`: optionaler lokaler PEM-Prüfschlüssel statt des eingebetteten Schlüssels.
 - `SAA_INSTALLER_AUTH_HEADER_FILE`: optionaler kanonischer Dateipfad mit genau einer
   Zeile `Authorization: Bearer <TOKEN>` samt abschließendem Zeilenumbruch.
   Nur root darf die Datei lesen (Modus 0600). Schlüssel und sämtliche Elternverzeichnisse
@@ -42,14 +61,17 @@ Anschließend wird der lesende Zugriff geprüft. Private Schlüssel bleiben auf 
   Authentifizierte URLs sind ausschließlich GitHub-Release-Asset-API-Adressen des
   privaten Produktrepositorys: `https://api.github.com/repos/ViSka-glitch/Security-Alert-Analyzer/releases/assets/<ID>`.
 - `--dry-run`: reicht den Vorprüfungsmodus an den Installer weiter.
+- `--verify-only`: lädt und prüft Installer und Signatur, startet den Installer aber
+  niemals. Fehlende Prüfwerkzeuge führen zum Abbruch statt zu Paketinstallation.
+  Netzwerkzugriffe und kurzlebige temporäre Dateien bleiben erforderlich.
 - `--non-interactive`: benötigt extern vorbereitete Konfiguration und Secrets.
 - `--prepare-host`: Hostvorbereitung ausdrücklich anfordern; fehlende Voraussetzungen
   aktivieren sie bei `install` auch automatisch.
 - `--confirm-host-changes`: Paket-/Dienst-/Kontoänderungen ohne Rückfrage erlauben;
   im nichtinteraktiven Modus erforderlich. `--dry-run` installiert keine Pakete.
 
-Es gibt noch keine veröffentlichte freigegebene Installeradresse mit Signaturnachweis.
-Deshalb wird hier bewusst kein vermeintlich fertiger Installations-Einzeiler angegeben.
+Es gibt einen signierten privaten Testrelease-Entwurf mit vorbelegten Asset-Adressen,
+aber noch keine produktiv freigegebene Auslieferung oder frische Installationsabnahme.
 Ein anonymer Raw-Link auf ein privates GitHub-Repository funktioniert nicht.
 Ein lesender, auf das Produktrepository begrenzter Zugang muss separat auf dem
 Zielserver provisioniert werden. Keine Tokenwerte in Befehlsargumenten übergeben.
@@ -71,9 +93,12 @@ einem Branch und ist kein signiertes Release. Containerimages, Paketquellen,
 Vertrauensanker und die spätere Updateausführung benötigen eigene Betriebsfreigaben.
 Ein echter signierter Release ist noch nicht veröffentlicht.
 
-Die 22 isolierten Prüfungen verwenden Wegwerf-Schlüssel, simulierte Downloads
+Die 24 isolierten Prüfungen verwenden Wegwerf-Schlüssel, simulierte Downloads
 und Paket-/Kontopläne ohne Systemänderungen.
 Sie sind keine Abnahme eines echten privaten Downloads oder einer Neuinstallation.
+Zusätzlich ist der echte Nur-Prüfen-Download mit eingebetteten Releasewerten und dem
+vorhandenen Herausgeberzugang bestanden. Die Tokenabfrage ist im Pseudoterminal mit
+Testtoken auf unterdrücktes Echo geprüft. Ein neuer lesender Zugang bleibt ungeprüft.
 
 Der Betreiber muss als Nächstes den authentifizierten Bezug des privaten Installers
 beziehungsweise ein freigegebenes Releasepaket bereitstellen. Anschließend wird daraus
