@@ -12,11 +12,22 @@ prüft dessen erwarteten SHA-256-Wert und eine verpflichtende getrennte OpenSSL-
 mit einem vorab vertrauenswürdig installierten öffentlichen Schlüssel. Erst danach startet er den Installer. Für die geführten
 Eingaben wird das Terminal verwendet, auch wenn das Skript über eine Pipe geladen wird.
 
-Erforderlich sind derzeit Linux, sudo/root, ein aktuell sicherheitsgepflegtes curl,
-OpenSSL, GNU-Coreutils und für den eigentlichen
-Installer zusätzlich Git, Python 3, Docker Engine, Compose v2, ein vorbereitetes
-Betriebskonto und lesender Zugriff auf das private Produktrepository.
-Die automatische Einrichtung dieser Voraussetzungen ist noch nicht enthalten.
+Zum Laden bleiben Linux, Bash, root beziehungsweise sudo und ein Downloadwerkzeug
+erforderlich. Fehlende Prüfwerkzeuge (curl, OpenSSL, Coreutils und CA-Zertifikate)
+kann der Bootstrapper nach Bestätigung aus den eingerichteten Paketquellen installieren.
+Das Linux-Betriebssystem und root-Zugang werden nicht durch das Skript eingerichtet.
+
+Der weiterentwickelte private Installer bietet jetzt Hostvorbereitung an: Git,
+Python 3, SSH-Client, Terminaldialoge, Docker/Compose und ein Betriebskonto ohne
+zusätzliche sudo-/Docker-Gruppenrechte. Ubuntu 24.04 verwendet Ubuntu-Pakete;
+RHEL 9/10 benötigt zuvor von der IT freigegebene Docker-CE-Paketquellen und Subscription.
+Vorhandenes Podman/Containerd wird nicht automatisch ersetzt; bestehendes Docker
+ohne Compose-Plugin erfordert eine manuelle Ergänzung aus derselben Paketquelle.
+Es gibt noch keine praktische Neuinstallationsabnahme dieser Automatisierung.
+
+Der Assistent kann einen Deploy-Key erzeugen und zeigt nur dessen öffentlichen Teil.
+Die einmalige Freigabe im privaten GitHub-Repository erfolgt durch den Eigentümer.
+Anschließend wird der lesende Zugriff geprüft. Private Schlüssel bleiben auf dem Server.
 
 ## Konfiguration
 
@@ -32,6 +43,10 @@ Die automatische Einrichtung dieser Voraussetzungen ist noch nicht enthalten.
   privaten Produktrepositorys: `https://api.github.com/repos/ViSka-glitch/Security-Alert-Analyzer/releases/assets/<ID>`.
 - `--dry-run`: reicht den Vorprüfungsmodus an den Installer weiter.
 - `--non-interactive`: benötigt extern vorbereitete Konfiguration und Secrets.
+- `--prepare-host`: Hostvorbereitung ausdrücklich anfordern; fehlende Voraussetzungen
+  aktivieren sie bei `install` auch automatisch.
+- `--confirm-host-changes`: Paket-/Dienst-/Kontoänderungen ohne Rückfrage erlauben;
+  im nichtinteraktiven Modus erforderlich. `--dry-run` installiert keine Pakete.
 
 Es gibt noch keine veröffentlichte freigegebene Installeradresse mit Signaturnachweis.
 Deshalb wird hier bewusst kein vermeintlich fertiger Installations-Einzeiler angegeben.
@@ -50,12 +65,14 @@ Auslieferungskette voraus. Vor Produktiveinsatz fehlen insbesondere ein versioni
 signiertes Release, ein vertrauenswürdiger Prüfschlüssel und die Neuinstallations-,
 Update- und Wiederherstellungsabnahme. Red Hat ist noch nicht abgenommen.
 
-**Vertrauensgrenze:** Die Signatur schützt nur die heruntergeladene Installerdatei.
-Der derzeitige Installer bezieht anschließend einen veränderlichen Git-Branch;
-dieser Produktcheckout ist damit noch nicht durch die Installer-Signatur abgesichert.
-Ein signiertes, unveränderlich gebundenes Produktrelease bleibt erforderlich.
+**Vertrauensgrenze:** Der lokale Releasegenerator bindet die signierte Installerdatei
+an einen vollständigen Git-Commit. Die unverpackte Entwicklerfassung folgt weiterhin
+einem Branch und ist kein signiertes Release. Containerimages, Paketquellen,
+Vertrauensanker und die spätere Updateausführung benötigen eigene Betriebsfreigaben.
+Ein echter signierter Release ist noch nicht veröffentlicht.
 
-Die neun lokalen Prüfungen verwenden Wegwerf-Schlüssel und simulierte Downloads.
+Die 22 isolierten Prüfungen verwenden Wegwerf-Schlüssel, simulierte Downloads
+und Paket-/Kontopläne ohne Systemänderungen.
 Sie sind keine Abnahme eines echten privaten Downloads oder einer Neuinstallation.
 
 Der Betreiber muss als Nächstes den authentifizierten Bezug des privaten Installers
