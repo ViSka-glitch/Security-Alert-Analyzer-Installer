@@ -7,9 +7,9 @@ Security Alert Analyzer und ihr Quellcode bleiben in einem separaten privaten Re
 ## Aktueller Stand
 
 **Noch kein vollständiger Einzeiler für eine leere VM und keine Produktivfreigabe.**
-Der Bootstrapper lädt einen ausdrücklich konfigurierten Installer über HTTPS,
+Der Bootstrapper lädt den vorbelegten signierten Testinstaller über HTTPS,
 prüft dessen erwarteten SHA-256-Wert und eine verpflichtende getrennte OpenSSL-Signatur
-mit einem vorab vertrauenswürdig installierten öffentlichen Schlüssel. Erst danach startet er den Installer. Für die geführten
+mit dem eingebetteten oder einem separat vertrauenswürdig installierten öffentlichen Schlüssel. Erst danach startet er den Installer. Für die geführten
 Eingaben wird das Terminal verwendet, auch wenn das Skript über eine Pipe geladen wird.
 
 Zum Laden bleiben Linux, Bash, root beziehungsweise sudo und ein Downloadwerkzeug
@@ -30,6 +30,21 @@ Die einmalige Freigabe im privaten GitHub-Repository erfolgt durch den Eigentüm
 Anschließend wird der lesende Zugriff geprüft. Private Schlüssel bleiben auf dem Server.
 
 ## Konfiguration
+
+### Fest versionierter Aufruf: ausschließlich prüfen
+
+In einer interaktiven Bash-Sitzung auf Linux ausführen. Der Download muss vollständig
+erfolgreich sein, bevor Bash startet. Dies ist ein Testzugang, keine Produktivfreigabe.
+Prüfwerkzeuge müssen für diesen Modus bereits vorhanden sein; es werden keine Pakete installiert.
+
+```bash
+bash -c 'set -e; f=$(mktemp); trap '\''rm -f -- "$f"'\'' EXIT; curl --fail --silent --show-error --location --proto "=https" --proto-redir "=https" --connect-timeout 15 --max-time 120 https://raw.githubusercontent.com/ViSka-glitch/Security-Alert-Analyzer-Installer/c86a3d21af327918ee6dae3bda39e7165d011594/bootstrap_server.sh -o "$f"; sudo bash "$f" --verify-only'
+```
+
+Das GitHub-Token erst in der verdeckten Abfrage eingeben, nicht in diesen Befehl.
+Erwartet: `Download, SHA-256 und Signatur bestätigt. Installer nicht gestartet (--verify-only).`
+Bei HTTP 401/403/404 Zugang und Sichtbarkeit des privaten Entwurfs prüfen; nicht
+Signaturprüfung abschalten oder pauschal weitergehende Kontorechte vergeben.
 
 ### Geführter Testeinstieg ohne vorbereitete Dateien
 
@@ -73,8 +88,9 @@ Bootstrap-Commit verwenden. Der private Signierschlüssel ist niemals enthalten.
 Es gibt einen signierten privaten Testrelease-Entwurf mit vorbelegten Asset-Adressen,
 aber noch keine produktiv freigegebene Auslieferung oder frische Installationsabnahme.
 Ein anonymer Raw-Link auf ein privates GitHub-Repository funktioniert nicht.
-Ein lesender, auf das Produktrepository begrenzter Zugang muss separat auf dem
-Zielserver provisioniert werden. Keine Tokenwerte in Befehlsargumenten übergeben.
+Ein passender GitHub-Zugang muss vorhanden sein; der Token kann verdeckt eingegeben
+werden. Keine Tokenwerte in Befehlsargumenten übergeben. Der separate lesende Zugang
+ist noch nicht abgenommen; dem Testrelease-Entwurf nicht blind weitergehende Rechte geben.
 Der Git-Deploy-Key für den späteren Produktcheckout ist ein eigener Zugang.
 
 ## Sicherheit und nächste Schritte
@@ -91,18 +107,19 @@ Update- und Wiederherstellungsabnahme. Red Hat ist noch nicht abgenommen.
 an einen vollständigen Git-Commit. Die unverpackte Entwicklerfassung folgt weiterhin
 einem Branch und ist kein signiertes Release. Containerimages, Paketquellen,
 Vertrauensanker und die spätere Updateausführung benötigen eigene Betriebsfreigaben.
-Ein echter signierter Release ist noch nicht veröffentlicht.
+Ein signierter privater Testrelease-Entwurf ist vorhanden, kein freigegebener Produktrelease.
 
-Die 24 isolierten Prüfungen verwenden Wegwerf-Schlüssel, simulierte Downloads
+Die 26 isolierten Prüfungen verwenden Wegwerf-Schlüssel, simulierte Downloads
 und Paket-/Kontopläne ohne Systemänderungen.
 Sie sind keine Abnahme eines echten privaten Downloads oder einer Neuinstallation.
 Zusätzlich ist der echte Nur-Prüfen-Download mit eingebetteten Releasewerten und dem
 vorhandenen Herausgeberzugang bestanden. Die Tokenabfrage ist im Pseudoterminal mit
 Testtoken auf unterdrücktes Echo geprüft. Ein neuer lesender Zugang bleibt ungeprüft.
 
-Der Betreiber muss als Nächstes den authentifizierten Bezug des privaten Installers
-beziehungsweise ein freigegebenes Releasepaket bereitstellen. Anschließend wird daraus
-ein kurzer, getesteter Installationsaufruf erstellt.
+Als Nächstes stehen der Test mit einem separaten eingeschränkten Zugang und die frische
+VM-Installationsabnahme an. `--help` zeigt die Aufrufhilfe ohne Download. Nur die
+dokumentierten Optionen werden akzeptiert; `update` und `uninstall` sind über den
+Bootstrapper ausdrücklich gesperrt und bleiben eigene kontrollierte Betriebsabläufe.
 
 Öffentliche Sichtbarkeit dieses Repositorys ist keine Open-Source-Lizenzierung des
 SAA-Produkts. Es wird hier keine zusätzliche Lizenz erteilt.
