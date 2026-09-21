@@ -4,7 +4,17 @@ set +x
 umask 077
 VERIFY_ONLY=false
 for argument in "$@"; do
-  [[ "$argument" != --verify-only ]] || VERIFY_ONLY=true
+  case "$argument" in
+    --verify-only) VERIFY_ONLY=true ;;
+    --dry-run|--non-interactive|--prepare-host|--confirm-host-changes) ;;
+    -h|--help)
+      printf '%s\n' 'SAA-Testbootstrap: [--verify-only] [--dry-run] [--non-interactive] [--prepare-host] [--confirm-host-changes]' \
+        '--verify-only: Download und Signatur prüfen, keine Installation.' \
+        '--dry-run: geprüften Installer im Planungsmodus starten.' \
+        'Ohne Option: geführte Testinstallation. Keine Produktivfreigabe.'
+      exit 0 ;;
+    *) printf 'Fehler: Unbekannte Bootstrap-Option: %s\n' "$argument" >&2; exit 2 ;;
+  esac
 done
 
 INSTALLER_URL="${SAA_INSTALLER_URL-https://api.github.com/repos/ViSka-glitch/Security-Alert-Analyzer/releases/assets/564934788}"
