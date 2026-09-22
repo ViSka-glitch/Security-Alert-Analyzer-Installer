@@ -17,9 +17,9 @@ for argument in "$@"; do
   esac
 done
 
-INSTALLER_URL="${SAA_INSTALLER_URL-https://api.github.com/repos/ViSka-glitch/Security-Alert-Analyzer/releases/assets/581057287}"
-INSTALLER_SHA256="${SAA_INSTALLER_SHA256-88e75b71b5d51fe1eaa1d2cb13631ebb2c0fc943aa380fc2d31ac3417fdcc375}"
-SIGNATURE_URL="${SAA_INSTALLER_SIGNATURE_URL-https://api.github.com/repos/ViSka-glitch/Security-Alert-Analyzer/releases/assets/581057285}"
+INSTALLER_URL="${SAA_INSTALLER_URL-https://api.github.com/repos/ViSka-glitch/Security-Alert-Analyzer/releases/assets/581142354}"
+INSTALLER_SHA256="${SAA_INSTALLER_SHA256-994f0e2b31140eb14aeee3518aef78af2d79c99f191701a1855c15a3803243c9}"
+SIGNATURE_URL="${SAA_INSTALLER_SIGNATURE_URL-https://api.github.com/repos/ViSka-glitch/Security-Alert-Analyzer/releases/assets/581142355}"
 PUBLIC_KEY="${SAA_INSTALLER_PUBLIC_KEY:-}"
 AUTH_HEADER_FILE="${SAA_INSTALLER_AUTH_HEADER_FILE:-}"
 
