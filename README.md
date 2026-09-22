@@ -6,7 +6,7 @@ Security Alert Analyzer und ihr Quellcode bleiben in einem separaten privaten Re
 
 ## Aktueller Stand
 
-**Neuer Testrelease `e1605a6`:** Er ersetzt den fehlerhaften Testrelease `555d59a`.
+**Neuer Testrelease `f671e7d`:** Er enthält die Quellrechtekorrektur und den Anmeldehinweis.
 Die Korrektur der Quellrechte ist im Container als Nicht-root geprüft. Der neue
 Installer ist signiert und sein echter Bootstrapdownload einschließlich SHA-256 und
 Signatur ist ohne Installation bestanden. Die erneute VM-Installationsabnahme steht
@@ -38,6 +38,13 @@ Anschließend wird der lesende Zugriff geprüft. Private Schlüssel bleiben auf 
 
 ## Konfiguration
 
+Der weiterentwickelte Installer zeigt nach erfolgreichem Abschluss den initialen
+Benutzernamen aus der Laufzeitkonfiguration und einen Anmeldehinweis. Das Passwort
+wird nicht ausgegeben: Es gilt das bei der Erstinstallation festgelegte beziehungsweise
+zuletzt in der Benutzerverwaltung geänderte Passwort. Bestehende Konten werden nicht
+zurückgesetzt. Diese Ergänzung ist im signierten Testrelease `f671e7d` enthalten.
+Die praktische VM-Abnahme des neuen Abschlusshinweises steht noch aus.
+
 ### Fest versionierter Aufruf: ausschließlich prüfen
 
 In einer interaktiven Bash-Sitzung auf Linux ausführen. Der Download muss vollständig
@@ -45,7 +52,7 @@ erfolgreich sein, bevor Bash startet. Dies ist ein Testzugang, keine Produktivfr
 Prüfwerkzeuge müssen für diesen Modus bereits vorhanden sein; es werden keine Pakete installiert.
 
 ```bash
-bash -c 'set -e; f=$(mktemp); trap '\''rm -f -- "$f"'\'' EXIT; curl --fail --silent --show-error --location --proto "=https" --proto-redir "=https" --connect-timeout 15 --max-time 120 https://raw.githubusercontent.com/ViSka-glitch/Security-Alert-Analyzer-Installer/3aef4e6e162db0a1a8bebc1d003a656610953389/bootstrap_server.sh -o "$f"; sudo bash "$f" --verify-only'
+bash -c 'set -e; f=$(mktemp); trap '\''rm -f -- "$f"'\'' EXIT; curl --fail --silent --show-error --location --proto "=https" --proto-redir "=https" --connect-timeout 15 --max-time 120 https://raw.githubusercontent.com/ViSka-glitch/Security-Alert-Analyzer-Installer/4fe39438c03821b0fa00a93c7ee955f0211947da/bootstrap_server.sh -o "$f"; sudo bash "$f" --verify-only'
 ```
 
 Das GitHub-Token erst in der verdeckten Abfrage eingeben, nicht in diesen Befehl.
@@ -56,7 +63,7 @@ Signaturprüfung abschalten oder pauschal weitergehende Kontorechte vergeben.
 ### Geführter Testeinstieg ohne vorbereitete Dateien
 
 Der Bootstrapper enthält jetzt die beiden Asset-Adressen, den erwarteten Hash und den
-öffentlichen Prüfschlüssel für `installer-test-e1605a6`. Ohne Zugangsdatei fragt er das
+öffentlichen Prüfschlüssel für `installer-test-f671e7d`. Ohne Zugangsdatei fragt er das
 GitHub-Token verdeckt über das Terminal ab. Das ist **keine OAuth-/Browseranmeldung**.
 Der Tokenwert landet nur kurzzeitig in einer root-geschützten Datei unter `/run` und
 wird beim Beenden entfernt; nicht als Argument oder Umgebungsvariable übergeben.
