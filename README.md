@@ -6,6 +6,13 @@ Security Alert Analyzer und ihr Quellcode bleiben in einem separaten privaten Re
 
 ## Aktueller Stand
 
+**Installationsstopp für den vorbelegten Testrelease `555d59a`:** Der erste VM-Test
+hat ein Dateirechteproblem im Image nachgewiesen. Download und Signaturprüfung bleiben
+gültig, die Installation erreicht aber keinen gesunden API-Zustand. Eine gezielte
+Dockerfile-Korrektur ist lokal gegen restriktive Quellrechte geprüft. Erst nach neuer
+Signierung und aktualisierter Releasebindung erneut installieren. Kein Betrieb als root
+und keine pauschale Freigabe von Laufzeitdateien als Umgehung.
+
 **Noch kein vollständiger Einzeiler für eine leere VM und keine Produktivfreigabe.**
 Der Bootstrapper lädt den vorbelegten signierten Testinstaller über HTTPS,
 prüft dessen erwarteten SHA-256-Wert und eine verpflichtende getrennte OpenSSL-Signatur
