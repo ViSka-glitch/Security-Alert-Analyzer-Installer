@@ -6,12 +6,12 @@ Security Alert Analyzer und ihr Quellcode bleiben in einem separaten privaten Re
 
 ## Aktueller Stand
 
-**Installationsstopp für den vorbelegten Testrelease `555d59a`:** Der erste VM-Test
-hat ein Dateirechteproblem im Image nachgewiesen. Download und Signaturprüfung bleiben
-gültig, die Installation erreicht aber keinen gesunden API-Zustand. Eine gezielte
-Dockerfile-Korrektur ist lokal gegen restriktive Quellrechte geprüft. Erst nach neuer
-Signierung und aktualisierter Releasebindung erneut installieren. Kein Betrieb als root
-und keine pauschale Freigabe von Laufzeitdateien als Umgehung.
+**Neuer Testrelease `e1605a6`:** Er ersetzt den fehlerhaften Testrelease `555d59a`.
+Die Korrektur der Quellrechte ist im Container als Nicht-root geprüft. Der neue
+Installer ist signiert und sein echter Bootstrapdownload einschließlich SHA-256 und
+Signatur ist ohne Installation bestanden. Die erneute VM-Installationsabnahme steht
+noch aus. Alte Bootstrapaufrufe nicht wiederverwenden. Kein Betrieb als root und
+keine pauschale Freigabe von Laufzeitdateien als Umgehung.
 
 **Noch kein vollständiger Einzeiler für eine leere VM und keine Produktivfreigabe.**
 Der Bootstrapper lädt den vorbelegten signierten Testinstaller über HTTPS,
@@ -45,23 +45,24 @@ erfolgreich sein, bevor Bash startet. Dies ist ein Testzugang, keine Produktivfr
 Prüfwerkzeuge müssen für diesen Modus bereits vorhanden sein; es werden keine Pakete installiert.
 
 ```bash
-bash -c 'set -e; f=$(mktemp); trap '\''rm -f -- "$f"'\'' EXIT; curl --fail --silent --show-error --location --proto "=https" --proto-redir "=https" --connect-timeout 15 --max-time 120 https://raw.githubusercontent.com/ViSka-glitch/Security-Alert-Analyzer-Installer/c86a3d21af327918ee6dae3bda39e7165d011594/bootstrap_server.sh -o "$f"; sudo bash "$f" --verify-only'
+bash -c 'set -e; f=$(mktemp); trap '\''rm -f -- "$f"'\'' EXIT; curl --fail --silent --show-error --location --proto "=https" --proto-redir "=https" --connect-timeout 15 --max-time 120 https://raw.githubusercontent.com/ViSka-glitch/Security-Alert-Analyzer-Installer/3aef4e6e162db0a1a8bebc1d003a656610953389/bootstrap_server.sh -o "$f"; sudo bash "$f" --verify-only'
 ```
 
 Das GitHub-Token erst in der verdeckten Abfrage eingeben, nicht in diesen Befehl.
 Erwartet: `Download, SHA-256 und Signatur bestätigt. Installer nicht gestartet (--verify-only).`
-Bei HTTP 401/403/404 Zugang und Sichtbarkeit des privaten Entwurfs prüfen; nicht
+Bei HTTP 401/403/404 Zugang und Sichtbarkeit des privaten Testreleases prüfen; nicht
 Signaturprüfung abschalten oder pauschal weitergehende Kontorechte vergeben.
 
 ### Geführter Testeinstieg ohne vorbereitete Dateien
 
 Der Bootstrapper enthält jetzt die beiden Asset-Adressen, den erwarteten Hash und den
-öffentlichen Prüfschlüssel für `installer-test-555d59a`. Ohne Zugangsdatei fragt er das
+öffentlichen Prüfschlüssel für `installer-test-e1605a6`. Ohne Zugangsdatei fragt er das
 GitHub-Token verdeckt über das Terminal ab. Das ist **keine OAuth-/Browseranmeldung**.
 Der Tokenwert landet nur kurzzeitig in einer root-geschützten Datei unter `/run` und
 wird beim Beenden entfernt; nicht als Argument oder Umgebungsvariable übergeben.
-Ein gültiger GitHub-Zugang muss vorhanden sein. Der Testrelease ist noch ein Entwurf;
-der Abruf mit einem ausschließlich lesenden Installationskonto ist nicht abgenommen.
+Ein gültiger GitHub-Zugang muss vorhanden sein. Der Testrelease ist als Pre-Release
+im privaten Produktrepository veröffentlicht, nicht als Entwurf. Für den neuen
+Release wurde der Herausgeberzugang geprüft; der erneute VM-Test folgt separat.
 
 Vorher kein Betriebskonto und keine sudo-Regeln für `saa` anlegen. Nach erfolgreicher
 Prüfung übernimmt der private Installer die bestätigte Hostvorbereitung. Die einmalige
@@ -92,12 +93,12 @@ Bootstrap-Commit verwenden. Der private Signierschlüssel ist niemals enthalten.
 - `--confirm-host-changes`: Paket-/Dienst-/Kontoänderungen ohne Rückfrage erlauben;
   im nichtinteraktiven Modus erforderlich. `--dry-run` installiert keine Pakete.
 
-Es gibt einen signierten privaten Testrelease-Entwurf mit vorbelegten Asset-Adressen,
+Es gibt einen signierten privaten Testrelease mit vorbelegten Asset-Adressen,
 aber noch keine produktiv freigegebene Auslieferung oder frische Installationsabnahme.
 Ein anonymer Raw-Link auf ein privates GitHub-Repository funktioniert nicht.
 Ein passender GitHub-Zugang muss vorhanden sein; der Token kann verdeckt eingegeben
 werden. Keine Tokenwerte in Befehlsargumenten übergeben. Der separate lesende Zugang
-ist noch nicht abgenommen; dem Testrelease-Entwurf nicht blind weitergehende Rechte geben.
+ist für den neuen Release noch nicht erneut abgenommen; nicht blind weitergehende Rechte geben.
 Der Git-Deploy-Key für den späteren Produktcheckout ist ein eigener Zugang.
 
 ## Sicherheit und nächste Schritte
@@ -114,7 +115,7 @@ Update- und Wiederherstellungsabnahme. Red Hat ist noch nicht abgenommen.
 an einen vollständigen Git-Commit. Die unverpackte Entwicklerfassung folgt weiterhin
 einem Branch und ist kein signiertes Release. Containerimages, Paketquellen,
 Vertrauensanker und die spätere Updateausführung benötigen eigene Betriebsfreigaben.
-Ein signierter privater Testrelease-Entwurf ist vorhanden, kein freigegebener Produktrelease.
+Ein signierter privater Testrelease ist vorhanden, kein freigegebener Produktrelease.
 
 Die 26 isolierten Prüfungen verwenden Wegwerf-Schlüssel, simulierte Downloads
 und Paket-/Kontopläne ohne Systemänderungen.
